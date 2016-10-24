@@ -116,6 +116,107 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
 
 @implementation UIViewController (MaryPopin)
 
+#pragma mark - Gesture
+
+- (void)addGestureRecognizer {
+    UIViewController *presentedPopin = self.presentedPopinViewController;
+    
+    if (!presentedPopin) {
+        return;
+    }
+    
+    UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(pan:)];
+    panGesture.delegate = self;
+    [presentedPopin.view addGestureRecognizer:panGesture];
+}
+
+- (void)pan:(UIPanGestureRecognizer *)gestureRecognizer {
+    UIViewController *presentedPopin = self.presentedPopinViewController;
+    
+    if (!presentedPopin) {
+        return;
+    }
+    
+    CGPoint translation = [gestureRecognizer translationInView:gestureRecognizer.view];
+    
+    if (gestureRecognizer.state == UIGestureRecognizerStateChanged) {
+        presentedPopin.view.transform = CGAffineTransformMakeTranslation(translation.x, translation.y);
+    } else if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
+    } else if (gestureRecognizer.state == UIGestureRecognizerStateFailed ||
+               gestureRecognizer.state == UIGestureRecognizerStateCancelled) {
+        CGFloat offset = MAX(pow(translation.x, 2) + pow(translation.y, 2), 0);
+        offset = sqrt(offset);
+        
+        CGFloat duration = 0.2f;
+        
+        duration = MIN(offset / CGRectGetMidX(gestureRecognizer.view.frame), 1.0) * duration;
+        
+        [UIView animateWithDuration:duration animations:^{
+            presentedPopin.view.transform = CGAffineTransformIdentity;
+        }];
+        
+    } else if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
+        CGPoint velocity = [gestureRecognizer velocityInView:gestureRecognizer.view];
+        
+        CGFloat offset = MAX(pow(translation.x, 2) + pow(translation.y, 2), 0);
+        offset = sqrt(offset);
+        
+        CGFloat velocityAbs = sqrt(pow(velocity.x, 2) + pow(velocity.y, 2));
+        
+        CGFloat springVelocity = velocityAbs / offset;
+        
+        CGFloat duration = 0.25;
+        
+        duration = MIN(offset / CGRectGetMidX(gestureRecognizer.view.frame), 1.0) * duration;
+        
+        CGPoint finalCenter = CGPointMake(translation.x + duration * velocity.x, translation.y + duration * velocity.y);
+        finalCenter = ({
+            CGPoint center = self.view.center;
+            center.x += finalCenter.x;
+            center.y += finalCenter.y;
+            center;
+        });
+        
+        BOOL shouldDismiss = !CGRectContainsPoint(presentedPopin.view.frame, finalCenter);
+        
+        [UIView animateWithDuration:duration delay:0.0 usingSpringWithDamping:1.0 initialSpringVelocity:springVelocity options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+            if (shouldDismiss) {
+                //here we care only about absolutes
+                CGFloat xTransform = fabs(duration*velocity.x);
+                CGFloat yTransform = fabs(duration*velocity.y);
+                
+                if (xTransform < CGRectGetMidX(presentedPopin.view.frame) &&
+                    yTransform < CGRectGetMidY(presentedPopin.view.frame)) {
+                    CGFloat percentX = xTransform/CGRectGetMidX(presentedPopin.view.frame);
+                    CGFloat percentY = yTransform/CGRectGetMidY(presentedPopin.view.frame);
+                    
+                    CGFloat maxPercent = MAX(percentX, percentY);
+                    CGFloat diff = 1 - maxPercent;
+                    
+                    xTransform += (diff * CGRectGetMidX(presentedPopin.view.frame));
+                    yTransform += (diff * CGRectGetMidY(presentedPopin.view.frame));
+                }
+                
+                //apply - if needed
+                xTransform *= (velocity.x/fabs(velocity.x));
+                yTransform *= (velocity.y/fabs(velocity.y));
+                presentedPopin.view.transform = CGAffineTransformConcat(self.view.transform, CGAffineTransformMakeTranslation(xTransform, yTransform));
+            } else {
+                presentedPopin.view.transform = CGAffineTransformIdentity;
+            }
+            
+        } completion:^(BOOL finished) {
+            if (shouldDismiss) {
+                [self dismissCurrentPopinControllerAnimated:NO];
+            }
+        }];
+    }
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    return YES;
+}
+
 #pragma mark - Popin presentation methods
 
 - (void)presentPopinController:(UIViewController *)popinController animated:(BOOL)animated
@@ -169,6 +270,9 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
             [self addPopinToHierarchy:popinController];
             CGRect popinFrame = [self computePopinFrame:popinController inRect:rect];
             [popinController.view setFrame:popinFrame];
+            
+            // Add pan gesture to close the presented popin
+            [self addGestureRecognizer];
             
             if ([popinController popinTransitionUsesDynamics] ) {
                 [self snapInAnimationForPopinController:popinController toPosition:popinFrame withDirection:popinController.popinTransitionDirection completion:completion];
@@ -258,7 +362,7 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
             [self snapOutAnimationForPopinController:presentedPopin withDirection:presentedPopin.popinTransitionDirection completion:completion];
         } else {
             [self forwardAppearanceBeginningIfNeeded:presentedPopin appearing:NO animated:YES];
-            [UIView animateWithDuration:0.3
+            [UIView animateWithDuration:0.25
                                   delay:0 options:UIViewAnimationOptionCurveEaseIn
                              animations:[self outAnimationForPopinController:presentedPopin]
                              completion:^(BOOL finished) {
@@ -852,7 +956,7 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
             animationDuration = 0.5;
             break;
         default:
-            animationDuration = 0.5;
+            animationDuration = 0.25;
             break;
     }
     return animationDuration;
