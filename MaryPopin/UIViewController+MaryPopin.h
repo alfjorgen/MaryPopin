@@ -131,6 +131,12 @@ typedef NS_OPTIONS(NSUInteger, BKTPopinOption) {
      *  Disable parallax effect on iOS7
      */
     BKTPopinDisableParallaxEffect = 1 << 3,
+    
+    /**
+     *  Enable gesture to close popin view
+     */
+    BKTPopinEnableGestureToDismiss = 1 << 4,
+    
     /**
      *  Set a background dimming view with a clear color. Default is a semi-transparent black background
      */

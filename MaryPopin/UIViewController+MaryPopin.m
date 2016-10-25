@@ -182,8 +182,8 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
         [UIView animateWithDuration:duration delay:0.0 usingSpringWithDamping:1.0 initialSpringVelocity:springVelocity options:UIViewAnimationOptionBeginFromCurrentState animations:^{
             if (shouldDismiss) {
                 //here we care only about absolutes
-                CGFloat xTransform = fabs(duration*velocity.x);
-                CGFloat yTransform = fabs(duration*velocity.y);
+                CGFloat xTransform = fabs(duration * velocity.x);
+                CGFloat yTransform = fabs(duration * velocity.y);
                 
                 if (xTransform < CGRectGetMidX(presentedPopin.view.frame) &&
                     yTransform < CGRectGetMidY(presentedPopin.view.frame)) {
@@ -196,17 +196,16 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
                     xTransform += (diff * CGRectGetMidX(presentedPopin.view.frame));
                     yTransform += (diff * CGRectGetMidY(presentedPopin.view.frame));
                 }
-                
-                //apply - if needed
-                xTransform *= (velocity.x/fabs(velocity.x));
-                yTransform *= (velocity.y/fabs(velocity.y));
+
+                xTransform *= (velocity.x / fabs(velocity.x));
+                yTransform *= (velocity.y / fabs(velocity.y));
                 presentedPopin.view.transform = CGAffineTransformConcat(self.view.transform, CGAffineTransformMakeTranslation(xTransform, yTransform));
             } else {
                 presentedPopin.view.transform = CGAffineTransformIdentity;
             }
             
         } completion:^(BOOL finished) {
-            if (shouldDismiss) {
+            if (shouldDismiss && finished) {
                 [self dismissCurrentPopinControllerAnimated:NO];
             }
         }];
@@ -272,7 +271,9 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
             [popinController.view setFrame:popinFrame];
             
             // Add pan gesture to close the presented popin
-            [self addGestureRecognizer];
+            if (options & BKTPopinEnableGestureToDismiss) {
+                [self addGestureRecognizer];
+            }
             
             if ([popinController popinTransitionUsesDynamics] ) {
                 [self snapInAnimationForPopinController:popinController toPosition:popinFrame withDirection:popinController.popinTransitionDirection completion:completion];
