@@ -380,8 +380,16 @@ typedef NS_ENUM(NSInteger, BKTPopinAlignementOption) {
  *  An object used to configure the blurred background.
  *
  *  @param blurParameters The blur parameters object.
- *  @sicne v1.4
+ *  @since v1.4
  */
 - (void)setBlurParameters:(BKTBlurParameters *)blurParameters;
+
+/**
+ *  The blurred background view.
+ *
+ *  @param dimmingView The dimming view of the viewController.
+ *  @since ?
+ */
+- (UIView *)dimmingView;
 
 @end
