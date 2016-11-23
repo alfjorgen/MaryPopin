@@ -403,7 +403,7 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
     [UIView animateWithDuration:animationDuration delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         //Move frame
         //[self.view setFrame:CGRectOffset(self.view.frame, 0.0f, 70.0f - CGRectGetMinY(self.view.frame))];
-        [self.view setFrame:CGRectOffset(self.view.frame, 0.0f, -(keyboardFrame.size.height / 2))];
+        [self.view setFrame:CGRectOffset(self.view.frame, 0.0f, keyboardFrame.size.height/2 - CGRectGetMinY(self.view.frame))];
     } completion:NULL];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
