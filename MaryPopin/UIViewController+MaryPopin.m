@@ -231,7 +231,7 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
     
     if (self.presentedPopinViewController == nil) {
         
-        //Background dimming view
+        // Background dimming view
         UIView *dimmingView = [[UIView alloc] initWithFrame:self.view.bounds];
         [dimmingView setAutoresizingMask:UIViewAutoresizingFlexibleHeight|UIViewAutoresizingFlexibleWidth];
         
@@ -390,9 +390,11 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
 
 #pragma mark - Responding to keyboard events
 
-- (void)keyboardWillShow:(NSNotification *)keyboardNotif
+- (void)keyboardWillShow:(NSNotification *)notification
 {
-    NSDictionary *keyboardInfo = [keyboardNotif userInfo];
+    NSDictionary *keyboardInfo = [notification userInfo];
+
+    CGRect keyboardFrame = [[keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
     
     // Get animation info from userInfo
     NSTimeInterval animationDuration;
@@ -400,15 +402,16 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
     
     [UIView animateWithDuration:animationDuration delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         //Move frame
-        [self.view setFrame:CGRectOffset(self.view.frame, 0.0f, 70.0f - CGRectGetMinY(self.view.frame))];
+        //[self.view setFrame:CGRectOffset(self.view.frame, 0.0f, 70.0f - CGRectGetMinY(self.view.frame))];
+        [self.view setFrame:CGRectOffset(self.view.frame, 0.0f, -(keyboardFrame.size.height / 2))];
     } completion:NULL];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
 }
 
-- (void)keyboardWillHide:(NSNotification *)keyboardNotif
+- (void)keyboardWillHide:(NSNotification *)notification
 {
-    NSDictionary *keyboardInfo = [keyboardNotif userInfo];
+    NSDictionary *keyboardInfo = [notification userInfo];
     
     // Get animation info from userInfo
     NSTimeInterval animationDuration;
