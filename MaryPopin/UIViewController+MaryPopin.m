@@ -25,6 +25,7 @@
 
 #import "UIViewController+MaryPopin.h"
 #import <objc/runtime.h>
+#import <sys/utsname.h>
 
 //Standard margin value on iOS
 #define kMaryPopinStandardMargin 20.0f
@@ -93,6 +94,27 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
     }
 }
 
+NSString *machineName() {
+    /*
+         @"i386"      on the simulator
+         @"iPod1,1"   on iPod Touch
+         @"iPod2,1"   on iPod Touch Second Generation
+         @"iPod3,1"   on iPod Touch Third Generation
+         @"iPod4,1"   on iPod Touch Fourth Generation
+         @"iPhone1,1" on iPhone
+         @"iPhone1,2" on iPhone 3G
+         @"iPhone2,1" on iPhone 3GS
+         @"iPad1,1"   on iPad
+         @"iPad2,1"   on iPad 2
+         @"iPhone3,1" on iPhone 4
+         @"iPhone4,1" on iPhone 4S
+     */
+    
+    struct utsname systemInfo;
+    uname(&systemInfo);
+    
+    return [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+}
 
 @implementation BKTBlurParameters
 - (id)init
@@ -324,7 +346,7 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
         
         //Keyboard notification
         if (! (options & BKTPopinIgnoreKeyboardNotification)) {
-            [[NSNotificationCenter defaultCenter] addObserver:popinController selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+            [[NSNotificationCenter defaultCenter] addObserver:popinController selector:@selector(mp_keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
         }
     }
 }
@@ -390,26 +412,36 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
 
 #pragma mark - Responding to keyboard events
 
-- (void)keyboardWillShow:(NSNotification *)notification
+- (void)mp_keyboardWillShow:(NSNotification *)notification
 {
     NSDictionary *keyboardInfo = [notification userInfo];
 
-    CGRect keyboardFrame = [[keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    //CGRect keyboardFrame = [[keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
     
     // Get animation info from userInfo
     NSTimeInterval animationDuration;
     [[keyboardInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] getValue:&animationDuration];
     
     [UIView animateWithDuration:animationDuration delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-        //Move frame
-        //[self.view setFrame:CGRectOffset(self.view.frame, 0.0f, 70.0f - CGRectGetMinY(self.view.frame))];
-        [self.view setFrame:CGRectOffset(self.view.frame, 0.0f, keyboardFrame.size.height/2 - CGRectGetMinY(self.view.frame))];
+        // Move frame
+        
+        CGFloat amount = 70.0f;
+        
+        BOOL isIphone4or4s = ([machineName() isEqualToString:@"iPhone3,1"] ||
+                              [machineName() isEqualToString:@"iPhone4,1"]);
+        
+        if (isIphone4or4s) {
+            amount = 40.0f;
+        }
+        
+        [self.view setFrame:CGRectOffset(self.view.frame, 0.0f, amount - CGRectGetMinY(self.view.frame))];
+        //[self.view setFrame:CGRectOffset(self.view.frame, 0.0f, keyboardFrame.size.height/2 - CGRectGetMinY(self.view.frame))];
     } completion:NULL];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(mp_keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
 }
 
-- (void)keyboardWillHide:(NSNotification *)notification
+- (void)mp_keyboardWillHide:(NSNotification *)notification
 {
     NSDictionary *keyboardInfo = [notification userInfo];
     
