@@ -401,8 +401,20 @@ CG_INLINE CGRect    BkRectInRectWithAlignementOption(CGRect myRect, CGRect refRe
     
     [UIView animateWithDuration:animationDuration delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         // Move frame
+
         //[self.view setFrame:CGRectOffset(self.view.frame, 0.0f, 70.0f - CGRectGetMinY(self.view.frame))];
-        [self.view setFrame:CGRectOffset(self.view.frame, 0.0f, self.view.frame.size.height/2 - keyboardFrame.size.height)];
+        
+        // Dont work on small devices!
+        //[self.view setFrame:CGRectOffset(self.view.frame, 0.0f, keyboardFrame.size.height/2 - CGRectGetMinY(self.view.frame))];
+        
+        CGRect viewFrame = self.view.frame;
+        
+        // screenHeight/2 - dialogHeight/2 - keyboardHeight/2
+        CGSize screenSize = [[UIScreen mainScreen] bounds].size;
+        viewFrame.origin.y = (screenSize.height/2 - self.view.frame.size.height/2 - keyboardFrame.size.height/2);
+        
+        self.view.frame = viewFrame;
+
     } completion:NULL];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(mp_keyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
